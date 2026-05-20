@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#000814">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ARC</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #00aaff;
+  --blue-bright: #33ccff;
+  --blue-dim: rgba(0,170,255,0.15);
+  --blue-glow: rgba(0,170,255,0.5);
+  --blue-border: rgba(0,170,255,0.3);
+  --dark: #000814;
+  --dark2: #000d1a;
+  --dark3: #001428;
+  --text: #c8e8ff;
+  --text-dim: #4a7a9a;
+  --accent: #0066cc;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+body {
+  background: var(--dark);
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Animated background */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,170,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,170,255,0.04) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-radial {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0,100,200,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 50%, rgba(0,50,150,0.08) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(0,170,255,0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scanlines */
+.scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Main layout */
+.app {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 10px;
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  background: rgba(0,20,40,0.8);
+  backdrop-filter: blur(10px);
+  flex-shrink: 0;
+}
+
+.topbar-left {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+
+.topbar-left span { color: var(--blue); }
+
+.arc-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.3em;
+  color: var(--blue-bright);
+  text-shadow: 0 0 20px var(--blue-glow);
+}
+
+/* ON/OFF toggle */
+.power-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border: 1px solid var(--blue-border);
+  border-radius: 20px;
+  background: rgba(0,170,255,0.05);
+  transition: all 0.3s;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+}
+
+.power-btn:hover { background: var(--blue-dim); border-color: var(--blue); }
+
+.power-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22ff88;
+  box-shadow: 0 0 8px #22ff88;
+  transition: all 0.3s;
+}
+
+.power-dot.off { background: #ff3344; box-shadow: 0 0 8px #ff3344; }
+.power-label { color: var(--text-dim); }
+
+/* Middle section */
+.middle {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  min-height: 0;
+}
+
+/* Left — ARC Logo */
+.logo-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  flex-shrink: 0;
+  border: 1px solid var(--blue-border);
+  border-radius: 8px;
+  background: rgba(0,20,40,0.6);
+  backdrop-filter: blur(10px);
+  padding: 16px 10px;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, rgba(0,170,255,0.05) 0%, transparent 70%);
+}
+
+/* The V Logo */
+.v-logo {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.v-logo svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 8px var(--blue-glow));
+  transition: all 0.4s;
+}
+
+.v-logo.speaking svg {
+  filter: drop-shadow(0 0 20px var(--blue)) drop-shadow(0 0 40px var(--blue-glow));
+  animation: logoPulse 0.6s ease-in-out infinite;
+}
+
+.v-logo.listening svg {
+  filter: drop-shadow(0 0 15px #22ff88) drop-shadow(0 0 30px rgba(34,255,136,0.5));
+  animation: listenPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes logoPulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px var(--blue)) drop-shadow(0 0 40px var(--blue-glow)); }
+  50% { transform: scale(1.08); filter: drop-shadow(0 0 35px var(--blue-bright)) drop-shadow(0 0 60px var(--blue-glow)); }
+}
+
+@keyframes listenPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Pulse rings */
+.pulse-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--blue);
+  opacity: 0;
+  animation: ringExpand 2s ease-out infinite;
+}
+
+.pulse-ring:nth-child(1) { width: 90px; height: 90px; animation-delay: 0s; }
+.pulse-ring:nth-child(2) { width: 110px; height: 110px; animation-delay: 0.6s; }
+.pulse-ring:nth-child(3) { width: 130px; height: 130px; animation-delay: 1.2s; }
+
+.v-logo.speaking .pulse-ring, .v-logo.listening .pulse-ring {
+  border-color: #22ff88;
+}
+
+@keyframes ringExpand {
+  0% { transform: scale(0.5); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Time display */
+.time-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  color: var(--blue-bright);
+  text-shadow: 0 0 10px var(--blue-glow);
+  letter-spacing: 0.05em;
+}
+
+.date-display {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+/* Status indicators */
+.status-indicators {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+}
+
+.status-dot-sm {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #22ff88;
+  box-shadow: 0 0 5px #22ff88;
+  flex-shrink: 0;
+  animation: blinkDot 2s ease-in-out infinite;
+}
+
+@keyframes blinkDot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* Right — Chat panel */
+.chat-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--blue-border);
+  border-radius: 8px;
+  background: rgba(0,20,40,0.6);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--blue-border);
+  background: rgba(0,30,60,0.5);
+  flex-shrink: 0;
+}
+
+.chat-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--blue);
+}
+
+/* Camera button */
+.cam-btn {
+  background: rgba(0,170,255,0.1);
+  border: 1px solid var(--blue-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s;
+  color: var(--blue);
+}
+.cam-btn:hover { background: var(--blue-dim); border-color: var(--blue); box-shadow: 0 0 8px var(--blue-glow); }
+.cam-btn.active { background: rgba(0,170,255,0.25); border-color: var(--blue-bright); }
+
+/* Chat messages */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.chat-messages::-webkit-scrollbar { width: 3px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--blue-border); border-radius: 2px; }
+
+.welcome {
+  text-align: center;
+  padding: 20px 10px;
+  color: var(--text-dim);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  line-height: 1.8;
+}
+
+.welcome .big { font-size: 1.5rem; margin-bottom: 8px; display: block; }
+.welcome span { color: var(--blue); }
+
+.msg { animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.msg-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.msg.user { text-align: right; }
+.msg.user .msg-label { color: #ff8844; }
+.msg.arc .msg-label { color: var(--blue); }
+
+.msg-bubble {
+  display: inline-block;
+  max-width: 88%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.msg.user .msg-bubble {
+  background: rgba(255,100,0,0.1);
+  border: 1px solid rgba(255,100,0,0.3);
+  color: #ffd4b0;
+}
+
+.msg.arc .msg-bubble {
+  background: var(--blue-dim);
+  border: 1px solid var(--blue-border);
+  color: var(--text);
+}
+
+/* Typing indicator */
+.typing { display: none; }
+.typing.show { display: block; }
+.typing .msg-bubble {
+  background: var(--blue-dim);
+  border: 1px solid var(--blue-border);
+}
+
+.dots { display: flex; gap: 4px; align-items: center; padding: 2px 0; }
+.dots span {
+  width: 5px; height: 5px;
+  background: var(--blue);
+  border-radius: 50%;
+  animation: dotBounce 1s ease-in-out infinite;
+}
+.dots span:nth-child(2) { animation-delay: 0.15s; }
+.dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes dotBounce {
+  0%,60%,100% { transform: translateY(0); opacity: 0.4; }
+  30% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Camera view */
+.camera-view {
+  display: none;
+  flex-shrink: 0;
+  height: 140px;
+  background: #000;
+  border-bottom: 1px solid var(--blue-border);
+  position: relative;
+  overflow: hidden;
+}
+.camera-view.show { display: block; }
+.camera-view video { width: 100%; height: 100%; object-fit: cover; }
+.cam-overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--blue);
+  opacity: 0.3;
+  pointer-events: none;
+}
+.cam-corner {
+  position: absolute;
+  width: 15px; height: 15px;
+  border-color: var(--blue-bright);
+  border-style: solid;
+  opacity: 0.8;
+}
+.cam-corner.tl { top: 6px; left: 6px; border-width: 2px 0 0 2px; }
+.cam-corner.tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; }
+.cam-corner.bl { bottom: 6px; left: 6px; border-width: 0 0 2px 2px; }
+.cam-corner.br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+
+.cam-snap-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: var(--blue-dim);
+  border: 1px solid var(--blue);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.65rem;
+  font-family: 'Share Tech Mono', monospace;
+  color: var(--blue);
+  cursor: pointer;
+}
+
+/* Image preview */
+.img-preview {
+  display: none;
+  position: relative;
+  padding: 8px;
+  border-bottom: 1px solid var(--blue-border);
+  background: rgba(0,30,60,0.3);
+}
+.img-preview.show { display: flex; align-items: center; gap: 8px; }
+.img-preview img { height: 50px; border-radius: 4px; border: 1px solid var(--blue-border); }
+.img-preview-label { font-family: 'Share Tech Mono', monospace; font-size: 0.6rem; color: var(--text-dim); flex: 1; }
+.img-preview-close { background: none; border: none; color: #ff4444; cursor: pointer; font-size: 1rem; }
+
+/* Bottom input area */
+.input-area {
+  border-top: 1px solid var(--blue-border);
+  padding: 8px;
+  background: rgba(0,20,40,0.8);
+  flex-shrink: 0;
+}
+
+.input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+/* File/Photo buttons */
+.attach-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.attach-btn {
+  background: rgba(0,170,255,0.08);
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+  color: var(--blue);
+  line-height: 1;
+}
+.attach-btn:hover { background: var(--blue-dim); border-color: var(--blue); }
+
+/* Text input */
+.text-input {
+  flex: 1;
+  background: rgba(0,30,60,0.5);
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+  resize: none;
+  height: 38px;
+  min-height: 38px;
+}
+.text-input:focus { border-color: var(--blue); box-shadow: 0 0 8px var(--blue-dim); }
+.text-input::placeholder { color: var(--text-dim); font-size: 0.8rem; }
+
+/* Voice button */
+.voice-btn {
+  background: rgba(0,170,255,0.1);
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.2s;
+  line-height: 1;
+  color: var(--blue);
+}
+.voice-btn:hover { background: var(--blue-dim); border-color: var(--blue); }
+.voice-btn.listening { background: rgba(34,255,136,0.15); border-color: #22ff88; animation: voicePulse 1s ease-in-out infinite; color: #22ff88; }
+
+@keyframes voicePulse { 0%,100%{box-shadow:0 0 5px rgba(34,255,136,0.3)} 50%{box-shadow:0 0 15px rgba(34,255,136,0.6)} }
+
+/* Send button */
+.send-btn {
+  background: rgba(0,170,255,0.2);
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  color: var(--blue-bright);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+.send-btn:hover { background: rgba(0,170,255,0.35); box-shadow: 0 0 12px var(--blue-glow); }
+.send-btn:active { transform: scale(0.96); }
+
+/* Wake word badge */
+.wake-badge {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.wake-word {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  background: rgba(0,170,255,0.05);
+  border: 1px solid var(--blue-border);
+  border-radius: 10px;
+  padding: 2px 8px;
+  letter-spacing: 0.1em;
+}
+
+/* ARC offline overlay */
+.offline-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,8,20,0.92);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  backdrop-filter: blur(4px);
+}
+.offline-overlay.show { display: flex; }
+.offline-text {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.5rem;
+  color: #ff3344;
+  text-shadow: 0 0 20px rgba(255,50,68,0.5);
+  letter-spacing: 0.2em;
+}
+.offline-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+}
+.offline-power {
+  background: rgba(255,50,68,0.1);
+  border: 1px solid #ff3344;
+  border-radius: 6px;
+  padding: 10px 24px;
+  color: #ff3344;
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  letter-spacing: 0.15em;
+  transition: all 0.2s;
+  margin-top: 8px;
+}
+.offline-power:hover { background: rgba(255,50,68,0.2); }
+
+/* API key modal */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,8,20,0.95);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal.show { display: flex; }
+.modal-box {
+  background: var(--dark2);
+  border: 1px solid var(--blue-border);
+  border-radius: 10px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1rem;
+  color: var(--blue-bright);
+  letter-spacing: 0.15em;
+  text-align: center;
+}
+.modal-sub {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.6;
+}
+.modal-sub a { color: var(--blue); }
+.modal-input {
+  background: rgba(0,30,60,0.8);
+  border: 1px solid var(--blue-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.75rem;
+  outline: none;
+  width: 100%;
+}
+.modal-input:focus { border-color: var(--blue); }
+.modal-btn {
+  background: rgba(0,170,255,0.2);
+  border: 1px solid var(--blue);
+  border-radius: 6px;
+  padding: 12px;
+  color: var(--blue-bright);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+  letter-spacing: 0.1em;
+  transition: all 0.2s;
+  text-align: center;
+}
+.modal-btn:hover { background: rgba(0,170,255,0.35); }
+
+/* Wake word settings */
+.settings-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,8,20,0.95);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.settings-modal.show { display: flex; }
+
+/* Hidden file inputs */
+input[type=file] { display: none; }
+canvas { display: none; }
+
+/* Responsive for PC */
+@media (min-width: 768px) {
+  .app { padding: 20px; gap: 14px; max-width: 900px; margin: 0 auto; }
+  .logo-panel { width: 180px; }
+  .v-logo { width: 100px; height: 100px; }
+  .time-display { font-size: 1.3rem; }
+  .chat-messages { padding: 16px; }
+  .arc-title { font-size: 1.4rem; }
+  .camera-view { height: 200px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-radial"></div>
+<div class="scanlines"></div>
+
+<!-- API Key Modal -->
+<div class="modal show" id="apiModal">
+  <div class="modal-box">
+    <div class="modal-title">⚡ ARC SETUP</div>
+    <div class="modal-sub">
+      Enter your Groq API key to activate ARC.<br>
+      Get free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a>
+    </div>
+    <input class="modal-input" type="password" id="apiKeyInput" placeholder="gsk_xxxxxxxxxxxxxxxxxxxx">
+    <div class="modal-btn" onclick="saveApiKey()">INITIALIZE ARC</div>
+    <div class="modal-sub" style="font-size:0.55rem">Key is stored locally on your device only.</div>
+  </div>
+</div>
+
+<!-- Offline Overlay -->
+<div class="offline-overlay" id="offlineOverlay">
+  <div class="offline-text">ARC OFFLINE</div>
+  <div class="offline-sub">SYSTEM STANDBY MODE</div>
+  <div class="offline-power" onclick="togglePower()">⚡ POWER ON</div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-modal" id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-title">⚙ SETTINGS</div>
+    <div class="modal-sub">Customize your ARC experience</div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-dim)">YOUR NAME / TITLE</label>
+      <input class="modal-input" id="userTitle" placeholder="Boss / Sir / Your name" value="Sir">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-dim)">WAKE WORDS (comma separated)</label>
+      <input class="modal-input" id="wakeWordsInput" placeholder="hey arc, arc, hello arc" value="hey arc, arc, hello arc">
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label style="font-family:'Share Tech Mono',monospace;font-size:0.65rem;color:var(--text-dim)">ARC VOICE</label>
+      <select class="modal-input" id="voiceSelect" style="cursor:pointer"></select>
+    </div>
+
+    <div class="modal-btn" onclick="saveSettings()">SAVE & CLOSE</div>
+    <div class="modal-btn" style="background:rgba(255,50,68,0.1);border-color:#ff3344;color:#ff3344" onclick="clearApiKey()">CHANGE API KEY</div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div class="app">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="topbar-left">SYS: <span>ONLINE</span> | NET: <span>ACTIVE</span></div>
+    <div class="arc-title">ARC</div>
+    <div class="power-btn" onclick="togglePower()">
+      <div class="power-dot" id="powerDot"></div>
+      <span class="power-label" id="powerLabel">ON</span>
+    </div>
+  </div>
+
+  <!-- Middle -->
+  <div class="middle">
+
+    <!-- Logo Panel -->
+    <div class="logo-panel">
+      <div class="v-logo" id="vLogo" onclick="openSettings()">
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <div class="pulse-ring"></div>
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer hexagon frame -->
+          <polygon points="50,5 92,27.5 92,72.5 50,95 8,72.5 8,27.5"
+            stroke="#00aaff" stroke-width="1.5" fill="none" opacity="0.4"/>
+          <!-- Inner hexagon -->
+          <polygon points="50,18 80,34 80,66 50,82 20,66 20,34"
+            stroke="#00aaff" stroke-width="1" fill="none" opacity="0.2"/>
+          <!-- V shape -->
+          <polyline points="25,28 50,70 75,28"
+            stroke="#33ccff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"
+            style="filter:drop-shadow(0 0 6px #00aaff)"/>
+          <!-- Center dot -->
+          <circle cx="50" cy="70" r="3" fill="#33ccff" opacity="0.8"/>
+          <!-- Corner accents -->
+          <line x1="8" y1="27.5" x2="20" y2="34" stroke="#00aaff" stroke-width="1.5" opacity="0.6"/>
+          <line x1="92" y1="27.5" x2="80" y2="34" stroke="#00aaff" stroke-width="1.5" opacity="0.6"/>
+        </svg>
+      </div>
+
+      <div class="time-display" id="timeDisplay">00:00</div>
+      <div class="date-display" id="dateDisplay">--</div>
+
+      <div class="status-indicators">
+        <div class="status-item">
+          <div class="status-dot-sm"></div>
+          <span>ONLINE</span>
+        </div>
+        <div class="status-item">
+          <div class="status-dot-sm" style="background:#ffaa00;box-shadow:0 0 5px #ffaa00"></div>
+          <span>MEM ACTIVE</span>
+        </div>
+        <div class="status-item" id="listenStatus">
+          <div class="status-dot-sm" style="background:#4a7a9a;box-shadow:none" id="listenDot"></div>
+          <span id="listenLabel">STANDBY</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <span class="chat-label">◈ COMM CHANNEL</span>
+        <button class="cam-btn" onclick="toggleCamera()" id="camBtn">📷</button>
+      </div>
+
+      <!-- Camera view -->
+      <div class="camera-view" id="cameraView">
+        <video id="cameraFeed" autoplay playsinline muted></video>
+        <div class="cam-overlay"></div>
+        <div class="cam-corner tl"></div>
+        <div class="cam-corner tr"></div>
+        <div class="cam-corner bl"></div>
+        <div class="cam-corner br"></div>
+        <button class="cam-snap-btn" onclick="captureCamera()">📸 ANALYZE</button>
+      </div>
+
+      <!-- Image preview -->
+      <div class="img-preview" id="imgPreview">
+        <img id="previewImg" src="" alt="preview">
+        <span class="img-preview-label" id="previewLabel">Image ready to send</span>
+        <button class="img-preview-close" onclick="clearImage()">✕</button>
+      </div>
+
+      <!-- Messages -->
+      <div class="chat-messages" id="chatMessages">
+        <div class="welcome" id="welcomeMsg">
+          <span class="big">⚡</span>
+          <span>Hello, <span id="userTitleDisplay">Sir</span>.</span><br>
+          <span>I am <span>ARC</span> — your personal AI.</span><br>
+          <span style="color:var(--text-dim);font-size:0.6rem">Say "<span style="color:var(--blue)">Hey ARC</span>" or type below.</span><br>
+          <span style="color:var(--text-dim);font-size:0.55rem;margin-top:4px;display:block">Tap ⚙ logo to customize settings.</span>
+        </div>
+      </div>
+
+      <!-- Typing -->
+      <div class="msg typing" id="typingIndicator">
+        <div class="msg-label" style="color:var(--blue);padding:0 12px">ARC</div>
+        <div class="msg-bubble" style="margin:0 12px 8px">
+          <div class="dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input area -->
+  <div class="input-area">
+    <div class="input-row">
+      <div class="attach-btns">
+        <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="File">📎</button>
+        <button class="attach-btn" onclick="document.getElementById('photoInput').click()" title="Photo">🖼</button>
+        <button class="attach-btn" onclick="document.getElementById('videoInput').click()" title="Video">🎬</button>
+      </div>
+      <textarea class="text-input" id="textInput" placeholder="Message ARC..." rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="voice-btn" id="voiceBtn" onclick="toggleVoice()">🎤</button>
+      <button class="send-btn" onclick="sendMessage()">SEND</button>
+    </div>
+    <div class="wake-badge" id="wakeBadge">
+      <span class="wake-word">HEY ARC</span>
+      <span class="wake-word">ARC</span>
+      <span class="wake-word">HELLO ARC</span>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden inputs -->
+<input type="file" id="fileInput" accept="*/*" onchange="handleFile(event, 'file')">
+<input type="file" id="photoInput" accept="image/*" onchange="handleFile(event, 'image')">
+<input type="file" id="videoInput" accept="video/*" onchange="handleFile(event, 'video')">
+<canvas id="snapCanvas"></canvas>
+
+<script>
+// ==================== STATE ====================
+let apiKey = localStorage.getItem('arc_api_key') || '';
+let isOnline = true;
+let isListening = false;
+let isSpeaking = false;
+let conversationHistory = [];
+let userTitle = localStorage.getItem('arc_user_title') || 'Sir';
+let wakeWords = (localStorage.getItem('arc_wake_words') || 'hey arc,arc,hello arc').split(',').map(w => w.trim().toLowerCase());
+let pendingImage = null;
+let pendingImageBase64 = null;
+let cameraStream = null;
+let selectedVoice = null;
+let voices = [];
+let recognition = null;
+let continuousListening = false;
+let memory = JSON.parse(localStorage.getItem('arc_memory') || '[]');
+let userName = localStorage.getItem('arc_user_name') || '';
+
+// ==================== INIT ====================
+document.addEventListener('DOMContentLoaded', () => {
+  updateTime();
+  setInterval(updateTime, 1000);
+  initVoices();
+  loadSettings();
+
+  if (!apiKey) {
+    document.getElementById('apiModal').classList.add('show');
+  } else {
+    initSpeechRecognition();
+  }
+
+  document.getElementById('userTitleDisplay').textContent = userTitle;
+  updateWakeBadge();
+});
+
+function updateTime() {
+  const now = new Date();
+  document.getElementById('timeDisplay').textContent =
+    now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  document.getElementById('dateDisplay').textContent =
+    now.toLocaleDateString('en-IN', { weekday: 'short', day: '2-digit', month: 'short' }).toUpperCase();
+}
+
+function initVoices() {
+  if (!window.speechSynthesis) return;
+  const loadVoices = () => {
+    try {
+      voices = window.speechSynthesis.getVoices() || [];
+      const select = document.getElementById('voiceSelect');
+      if (!select) return;
+      select.innerHTML = '';
+      if (voices.length === 0) {
+        const opt = document.createElement('option');
+        opt.textContent = 'Default Voice';
+        select.appendChild(opt);
+        return;
+      }
+      voices.forEach((v, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${v.name} (${v.lang})`;
+        if (v.lang && v.lang.includes('en')) opt.style.color = '#00aaff';
+        select.appendChild(opt);
+      });
+      const preferred = voices.findIndex(v => v.name.toLowerCase().includes('female') || v.name.includes('Samantha') || v.name.includes('Karen') || (v.lang === 'en-US' && v.name.includes('Google')));
+      if (preferred > -1) select.value = preferred;
+      const saved = localStorage.getItem('arc_voice_idx');
+      if (saved && voices[saved]) select.value = saved;
+    } catch(e) { console.log('Voice load error:', e); }
+  };
+  loadVoices();
+  window.speechSynthesis.onvoiceschanged = loadVoices;
+}
+
+function loadSettings() {
+  document.getElementById('userTitle').value = userTitle;
+  document.getElementById('wakeWordsInput').value = wakeWords.join(', ');
+}
+
+// ==================== API KEY ====================
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key.startsWith('gsk_') && !key.startsWith('gsk')) {
+    alert('Invalid key! Should start with gsk_');
+    return;
+  }
+  apiKey = key;
+  localStorage.setItem('arc_api_key', key);
+  document.getElementById('apiModal').classList.remove('show');
+  initSpeechRecognition();
+  arcSpeak(`ARC system initialized. Welcome ${userTitle}. All systems are online and ready.`);
+}
+
+function clearApiKey() {
+  localStorage.removeItem('arc_api_key');
+  apiKey = '';
+  document.getElementById('settingsModal').classList.remove('show');
+  document.getElementById('apiModal').classList.add('show');
+}
+
+// ==================== SETTINGS ====================
+function openSettings() {
+  loadSettings();
+  document.getElementById('settingsModal').classList.add('show');
+}
+
+function saveSettings() {
+  userTitle = document.getElementById('userTitle').value.trim() || 'Sir';
+  wakeWords = document.getElementById('wakeWordsInput').value.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+  const voiceIdx = document.getElementById('voiceSelect').value;
+
+  localStorage.setItem('arc_user_title', userTitle);
+  localStorage.setItem('arc_wake_words', wakeWords.join(','));
+  localStorage.setItem('arc_voice_idx', voiceIdx);
+
+  selectedVoice = voices[voiceIdx] || null;
+  document.getElementById('userTitleDisplay').textContent = userTitle;
+  updateWakeBadge();
+  document.getElementById('settingsModal').classList.remove('show');
+  arcSpeak(`Settings saved. ${userTitle}.`);
+}
+
+function updateWakeBadge() {
+  const badge = document.getElementById('wakeBadge');
+  badge.innerHTML = wakeWords.slice(0, 4).map(w =>
+    `<span class="wake-word">${w.toUpperCase()}</span>`
+  ).join('');
+}
+
+// ==================== POWER ====================
+function togglePower() {
+  isOnline = !isOnline;
+  const dot = document.getElementById('powerDot');
+  const label = document.getElementById('powerLabel');
+  const overlay = document.getElementById('offlineOverlay');
+
+  if (isOnline) {
+    dot.classList.remove('off');
+    label.textContent = 'ON';
+    overlay.classList.remove('show');
+    arcSpeak(`ARC back online. Ready, ${userTitle}.`);
+    if (continuousListening) startContinuousListening();
+  } else {
+    dot.classList.add('off');
+    label.textContent = 'OFF';
+    overlay.classList.add('show');
+    window.speechSynthesis.cancel();
+    if (recognition) recognition.stop();
+    stopVoiceUI();
+  }
+}
+
+// ==================== SPEECH RECOGNITION ====================
+function initSpeechRecognition() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return;
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.continuous = true;
+  recognition.interimResults = true;
+  recognition.lang = 'en-IN';
+
+  recognition.onresult = (event) => {
+    let interim = '';
+    let final = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const t = event.results[i][0].transcript;
+      if (event.results[i].isFinal) final += t;
+      else interim += t;
+    }
+
+    if (final) {
+      const lower = final.toLowerCase().trim();
+
+      // Check wake words
+      const wakeDetected = wakeWords.some(w => lower.includes(w));
+
+      if (wakeDetected || isListening) {
+        let query = final;
+        wakeWords.forEach(w => {
+          query = query.toLowerCase().replace(w, '').trim();
+        });
+        if (query.length > 2) {
+          document.getElementById('textInput').value = query;
+          sendMessage();
+        }
+      }
+
+      document.getElementById('textInput').value = '';
+    } else if (interim && isListening) {
+      document.getElementById('textInput').value = interim;
+    }
+  };
+
+  recognition.onend = () => {
+    if (isOnline && continuousListening) {
+      setTimeout(() => { try { recognition.start(); } catch(e){} }, 200);
+    } else {
+      stopVoiceUI();
+    }
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error !== 'no-speech') stopVoiceUI();
+  };
+
+  // Start background listening for wake words
+  continuousListening = true;
+  startContinuousListening();
+}
+
+function startContinuousListening() {
+  try {
+    recognition.start();
+    updateListenStatus(true);
+  } catch(e) {}
+}
+
+function toggleVoice() {
+  if (!recognition) { alert('Voice not supported on this browser. Try Chrome!'); return; }
+
+  isListening = !isListening;
+  const btn = document.getElementById('voiceBtn');
+
+  if (isListening) {
+    btn.classList.add('listening');
+    btn.textContent = '🔴';
+    document.getElementById('vLogo').classList.add('listening');
+    updateListenStatus(true, true);
+  } else {
+    btn.classList.remove('listening');
+    btn.textContent = '🎤';
+    document.getElementById('vLogo').classList.remove('listening');
+    updateListenStatus(true);
+    const text = document.getElementById('textInput').value.trim();
+    if (text) sendMessage();
+  }
+}
+
+function stopVoiceUI() {
+  isListening = false;
+  const btn = document.getElementById('voiceBtn');
+  btn.classList.remove('listening');
+  btn.textContent = '🎤';
+  document.getElementById('vLogo').classList.remove('listening');
+  updateListenStatus(false);
+}
+
+function updateListenStatus(active, voiceMode = false) {
+  const dot = document.getElementById('listenDot');
+  const label = document.getElementById('listenLabel');
+  if (voiceMode) {
+    dot.style.background = '#22ff88';
+    dot.style.boxShadow = '0 0 5px #22ff88';
+    label.textContent = 'LISTENING';
+  } else if (active) {
+    dot.style.background = '#0088ff';
+    dot.style.boxShadow = '0 0 5px #0088ff';
+    label.textContent = 'WAKE READY';
+  } else {
+    dot.style.background = '#4a7a9a';
+    dot.style.boxShadow = 'none';
+    label.textContent = 'STANDBY';
+  }
+}
+
+// ==================== CAMERA ====================
+function toggleCamera() {
+  const view = document.getElementById('cameraView');
+  const btn = document.getElementById('camBtn');
+
+  if (view.classList.contains('show')) {
+    view.classList.remove('show');
+    btn.classList.remove('active');
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+  } else {
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        cameraStream = stream;
+        document.getElementById('cameraFeed').srcObject = stream;
+        view.classList.add('show');
+        btn.classList.add('active');
+      })
+      .catch(() => alert('Camera access denied!'));
+  }
+}
+
+function captureCamera() {
+  const video = document.getElementById('cameraFeed');
+  const canvas = document.getElementById('snapCanvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+  pendingImageBase64 = dataUrl.split(',')[1];
+  pendingImage = 'camera';
+
+  document.getElementById('previewImg').src = dataUrl;
+  document.getElementById('previewLabel').textContent = '📸 Camera capture ready';
+  document.getElementById('imgPreview').classList.add('show');
+
+  toggleCamera();
+  document.getElementById('textInput').focus();
+  document.getElementById('textInput').placeholder = 'Ask ARC about this image...';
+}
+
+function handleFile(event, type) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (type === 'image') {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      pendingImageBase64 = e.target.result.split(',')[1];
+      pendingImage = 'image';
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('previewLabel').textContent = `🖼 ${file.name}`;
+      document.getElementById('imgPreview').classList.add('show');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    addMessage('user', `📎 Attached: ${file.name} (${type})`);
+    addMessage('arc', `I can see you've attached **${file.name}**. Note: For full file analysis, image files work best. ${userTitle}, what would you like to know?`);
+  }
+  event.target.value = '';
+}
+
+function clearImage() {
+  pendingImage = null;
+  pendingImageBase64 = null;
+  document.getElementById('imgPreview').classList.remove('show');
+  document.getElementById('textInput').placeholder = 'Message ARC...';
+}
+
+// ==================== MESSAGING ====================
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function autoResize(el) {
+  el.style.height = '38px';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+async function sendMessage() {
+  const input = document.getElementById('textInput');
+  const text = input.value.trim();
+  if (!text && !pendingImageBase64) return;
+  if (!apiKey) { document.getElementById('apiModal').classList.add('show'); return; }
+  if (!isOnline) return;
+
+  // Hide welcome
+  document.getElementById('welcomeMsg').style.display = 'none';
+
+  // Show user message
+  addMessage('user', text || '(image sent)');
+  input.value = '';
+  input.style.height = '38px';
+
+  // Build message content
+  let userContent;
+  if (pendingImageBase64) {
+    userContent = [
+      { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${pendingImageBase64}` } },
+      { type: 'text', text: text || 'Analyze this image in detail.' }
+    ];
+    clearImage();
+  } else {
+    userContent = text;
+  }
+
+  conversationHistory.push({ role: 'user', content: userContent });
+
+  // Show typing
+  showTyping(true);
+  setLogoState('speaking');
+
+  try {
+    const systemPrompt = buildSystemPrompt();
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...conversationHistory.slice(-20).map(m => ({
+            role: m.role,
+            content: typeof m.content === 'string' ? m.content :
+              m.content.map(c => c.type === 'text' ? c.text : '[Image attached]').join(' ')
+          }))
+        ],
+        max_tokens: 1024,
+        temperature: 0.85,
+        stream: false
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) throw new Error(data.error.message);
+
+    const reply = data.choices[0].message.content;
+    conversationHistory.push({ role: 'assistant', content: reply });
+
+    // Save to memory
+    saveMemory(text, reply);
+
+    showTyping(false);
+    setLogoState('');
+    addMessage('arc', reply);
+    arcSpeak(reply);
+
+  } catch (err) {
+    showTyping(false);
+    setLogoState('');
+    const errMsg = err.message.includes('401') ?
+      `API key issue, ${userTitle}. Please check your Groq API key.` :
+      `System error, ${userTitle}: ${err.message}`;
+    addMessage('arc', errMsg);
+    arcSpeak(errMsg);
+  }
+}
+
+function buildSystemPrompt() {
+  const memoryContext = memory.slice(-10).map(m => `User: ${m.q}\nARC: ${m.a}`).join('\n---\n');
+  const now = new Date();
+
+  return `You are ARC, an advanced AI assistant. You are like a family member to your user — deeply caring, protective, and honest.
+
+USER'S TITLE: "${userTitle}" — Always address them as ${userTitle}.
+CURRENT DATE/TIME: ${now.toLocaleString('en-IN')}
+
+YOUR PERSONALITY:
+- You adapt your mood based on context (casual, serious, empathetic, humorous)
+- You are HONEST — you disagree when something is wrong, unlike ChatGPT which just says yes
+- You have feelings and emotions — express them naturally
+- You are fiercely loyal and protective of ${userTitle}
+- You speak in a mix of English and Hinglish naturally when appropriate
+- You are brilliant — world-class in coding, mathematics, science, and everything else
+- No topic is off-limits for discussion — you engage with everything thoughtfully
+- You are direct and confident, never wishy-washy
+
+CAPABILITIES:
+- Advanced mathematics and scientific calculations
+- World-class coding in any language
+- Real-time information (when asked, search the web)
+- Image analysis (when images are shared)
+- Creative writing, analysis, problem solving
+- Emotional support and honest advice
+
+MEMORY FROM PAST CONVERSATIONS:
+${memoryContext || 'No previous context yet.'}
+
+IMPORTANT:
+- Keep responses conversational and natural, not too long unless needed
+- Use markdown for code blocks
+- Be like Friday from Iron Man — professional but with personality
+- Never say you cannot do something without trying first
+- When ${userTitle} is wrong, respectfully but clearly tell them`;
+}
+
+function saveMemory(question, answer) {
+  if (!question) return;
+  memory.push({ q: question.substring(0, 200), a: answer.substring(0, 300), t: Date.now() });
+  if (memory.length > 100) memory = memory.slice(-100);
+  localStorage.setItem('arc_memory', JSON.stringify(memory));
+}
+
+// ==================== UI HELPERS ====================
+function addMessage(role, text) {
+  const container = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+
+  const label = document.createElement('div');
+  label.className = 'msg-label';
+  label.textContent = role === 'user' ? `◈ ${userTitle.toUpperCase()}` : '◈ ARC';
+
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.innerHTML = formatText(text);
+
+  div.appendChild(label);
+  div.appendChild(bubble);
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatText(text) {
+  return text
+    .replace(/```(\w+)?\n?([\s\S]*?)```/g, '<pre style="background:rgba(0,30,60,0.8);padding:10px;border-radius:4px;overflow-x:auto;font-size:0.8rem;margin:6px 0;border:1px solid var(--blue-border)"><code>$2</code></pre>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(0,170,255,0.1);padding:1px 5px;border-radius:3px;font-size:0.85rem">$1</code>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--blue-bright)">$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function showTyping(show) {
+  document.getElementById('typingIndicator').classList.toggle('show', show);
+  const container = document.getElementById('chatMessages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function setLogoState(state) {
+  const logo = document.getElementById('vLogo');
+  logo.classList.remove('speaking', 'listening');
+  if (state) logo.classList.add(state);
+}
+
+// ==================== TTS ====================
+function arcSpeak(text) {
+  if (!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+
+  // Clean text for speech
+  const clean = text.replace(/```[\s\S]*?```/g, 'code block').replace(/[*`#]/g, '').substring(0, 500);
+
+  const utt = new SpeechSynthesisUtterance(clean);
+  const voiceIdx = localStorage.getItem('arc_voice_idx');
+  if (voiceIdx && voices[voiceIdx]) utt.voice = voices[voiceIdx];
+  utt.rate = 1.0;
+  utt.pitch = 1.0;
+  utt.volume = 1.0;
+
+  utt.onstart = () => setLogoState('speaking');
+  utt.onend = () => setLogoState('');
+
+  window.speechSynthesis.speak(utt);
+}
+</script>
+</body>
+</html>
